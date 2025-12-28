@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Safe-Hijacking Control</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card: #16213e;
+            --text: #e94560;
+            --input-bg: #0f3460;
+            --accent: #00d2ff;
+        }
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: var(--card);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 400px;
+            text-align: center;
+        }
+        h2 { color: var(--accent); margin-bottom: 1.5rem; }
+        .input-group { margin-bottom: 1rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #bbb; }
+        input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background: var(--input-bg);
+            color: white;
+            box-sizing: border-box;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-execute { background-color: var(--text); color: white; }
+        .btn-execute:hover { background-color: #ff4d6d; transform: scale(1.02); }
+        .btn-undo { background-color: #4ecca3; color: #1a1a2e; display: none; }
+        .btn-undo:hover { background-color: #45b08c; }
+        
+        /* Estilos para el contenedor de estado */
+        #statusContainer { 
+            margin-top: 1.5rem; 
+            padding: 10px; 
+            border-radius: 5px; 
+            background: rgba(0, 210, 255, 0.1);
+            display: none; 
+        }
+        #statusText { font-size: 0.9rem; color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Safe-Hijacking: Estrategia B</h2>
+        
+        <div class="input-group">
+            <label>Latitud del Objetivo (p_target)</label>
+            <input type="number" id="lat" step="any" value="-35.3630000">
+        </div>
+        <div class="input-group">
+            <label>Longitud del Objetivo (p_target)</label>
+            <input type="number" id="lon" step="any" value="149.1650000">
+        </div>
+        
+        <button class="btn btn-execute" onclick="enviarAccion('/ejecutar')">EJECUTAR SECUESTRO</button>
+        <button class="btn btn-undo" id="undoBtn" onclick="enviarAccion('/deshacer')">DESHACER GLITCH</button>
+        
+        <div id="statusContainer">
+            <div id="statusText">Esperando comandos...</div>
+        </div>
+    </div>
+
+    <script>
+        async function enviarAccion(ruta) {
+            const statusText = document.getElementById('statusText');
+            const statusContainer = document.getElementById('statusContainer');
+            const undoBtn = document.getElementById('undoBtn');
+            
+            const data = {
+                lat: document.getElementById('lat').value,
+                lon: document.getElementById('lon').value
+            };
+
+            statusContainer.style.display = 'block';
+            statusText.innerText = "Comunicando con ArduPilot...";
+            
+            try {
+                const response = await fetch(ruta, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const res = await response.json();
+                
+                statusText.innerText = res.message;
+
+                if(ruta === '/ejecutar' && res.status === 'success') {
+                    undoBtn.style.display = 'block';
+                    statusText.style.color = '#00d2ff';
+                } else if (ruta === '/deshacer') {
+                    undoBtn.style.display = 'none';
+                    statusText.style.color = res.exito ? '#4ecca3' : '#e94560';
+                }
+            } catch (err) {
+                statusText.innerText = "Error: El servidor Python no responde.";
+                statusText.style.color = '#e94560';
+            }
+        }
+    </script>
+</body>
+</html>
