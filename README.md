@@ -1,90 +1,85 @@
 # Tractor Beam: Safe-Hijacking of Consumer Drones 🚁🛰️
 
-Este repositorio contiene una implementación funcional de las estrategias de secuestro de drones mediante el engaño de señales GPS (**GPS Spoofing**), basada en la investigación: *"Tractor Beam: Safe-hijacking of Consumer Drones with Adaptive GPS Spoofing"*.
+This repository contains a functional implementation of GPS spoofing hijacking strategies based on the research paper: *"Tractor Beam: Safe-hijacking of Consumer Drones with Adaptive GPS Spoofing"*.
 
-El proyecto utiliza el simulador **ArduPilot (SITL)** y la librería **DroneKit** para demostrar cómo un atacante puede manipular la trayectoria de drones de **Tipo I** y **Tipo II** de forma segura y precisa.
+The project uses the **ArduPilot (SITL)** simulator and the **DroneKit** library to demonstrate how an attacker can manipulate the trajectory of **Type I** and **Type II** drones safely and accurately.
 
-## 📋 Contenido del Repositorio
+## 📋 Repository Content
 
-* `web_hijack.py`: Servidor backend desarrollado en Flask que gestiona la conexión con el dron, el cálculo de vectores y la inyección de parámetros de simulación.
-* `templates/index.html`: Interfaz web interactiva diseñada con CSS moderno para introducir coordenadas de objetivo ($p_{target}$) y monitorear el estado del ataque.
+* `web_hijack.py`: Flask-based backend server managing drone connection, vector calculations, and simulation parameter injection.
+* `templates/index.html`: Interactive web interface designed with modern CSS to input target coordinates ($p_{target}$) and monitor the attack status.
 
 ---
 
-## 🚀 Estrategias de Secuestro Implementadas
+## 🚀 Implemented Hijacking Strategies
 
-### Estrategia A: Contra Drones Tipo I (Estáticos)
-Dirigida a drones que utilizan el GPS para mantener una posición fija (ej. DJI Phantom en modo Loiter o PosHold).
-* **Mecánica**: Se inyecta un desplazamiento gradual en los parámetros de error GPS (`SIM_GPS1_GLTCH_X/Y`).
-* **Efecto**: El dron intenta compensar el error percibido volando físicamente en la dirección opuesta al glitch, permitiendo "arrastrarlo" hacia una ubicación deseada.
+### Strategy A: Against Type I Drones (Static)
+Targeted at drones that use GPS to maintain a fixed position (e.g., DJI Phantom in Loiter or PosHold mode).
+* **Mechanism**: A gradual displacement is injected into the GPS error parameters (`SIM_GPS1_GLTCH_X/Y`).
+* **Effect**: The drone attempts to compensate for the perceived error by physically flying in the opposite direction of the glitch, allowing it to be "dragged" to a desired location.
 
-### Estrategia B: Contra Drones Tipo II (Autopiloto)
-Diseñada para drones que ejecutan misiones autónomas siguiendo waypoints (ej. Parrot Bebop 2).
-* **Mecánica**: Manipulación del algoritmo de seguimiento de ruta (*path-following*).
-* **Fórmula de Secuestro**: El script calcula la posición falsa ($a$) mediante la ecuación vectorial del paper:
+### Strategy B: Against Type II Drones (Autopilot)
+Designed for drones executing autonomous missions following waypoints (e.g., Parrot Bebop 2).
+* **Mechanism**: Manipulation of the path-following algorithm.
+* **Hijacking Formula**: The script calculates a fake position ($a$) using the paper's vector equation:
   $$a = p_{waypoint} + k \cdot (p_{target} - p_{init})$$
-  donde $k$ es un parámetro negativo que proyecta la mentira GPS al lado opuesto del objetivo real.
-* **Actualización Dinámica**: El backend utiliza un hilo de ejecución para recalcular el glitch en tiempo real, corrigiendo la deriva y mejorando la precisión del secuestro.
+  where $k$ is a negative parameter that projects the GPS lie to the opposite side of the real target.
+* **Dynamic Update**: The backend uses a threading loop to recalculate the glitch in real-time, correcting drift and improving hijacking precision.
 
 
 
 ---
 
-## 🛠️ Requisitos e Instalación
+## 🛠️ Requirements & Installation
 
-1.  **ArduPilot SITL**: Entorno de simulación configurado.
-2.  **Dependencias de Python**:
+1.  **ArduPilot SITL**: Simulation environment configured and running.
+2.  **Python Dependencies**:
     ```bash
     pip install flask dronekit
     ```
-3.  **Compatibilidad**: El script incluye un parche automático para el error `AttributeError: module 'collections' has no attribute 'MutableMapping'` común en Python 3.10+.
+3.  **Compatibility**: The script includes an automatic patch for the `AttributeError: module 'collections' has no attribute 'MutableMapping'` error common in Python 3.10+.
 
 ---
 
-## 💻 Instrucciones de Uso
+## 💻 Usage Instructions
 
-1.  **Iniciar SITL**:
+1.  **Start SITL**:
     ```bash
     sim_vehicle.py -v ArduCopter --console --map
     ```
-2.  **Preparar el Dron**: 
-    * Carga una misión con waypoints en Mission Planner y pulsa **"Escribir WPs"**.
-    * Despega el dron y cámbialo a modo `AUTO` para que comience la misión.
-3.  **Lanzar el Servidor**:
+2.  **Prepare the Drone**: 
+    * Load a mission with waypoints in Mission Planner and click **"Write WPs"**.
+    * Take off and switch the drone to `AUTO` mode so it begins the mission.
+3.  **Launch the Server**:
     ```bash
     python3 web_hijack.py
     ```
-4.  **Interfaz de Control**: Accede a `http://localhost:5000` en tu navegador.
-    * Introduce las coordenadas de destino.
-    * Pulsa **EJECUTAR SECUESTRO**.
-    * Usa **DESHACER GLITCH** para liberar el dron, volver a modo `GUIDED` y ver el reporte de precisión final.
+4.  **Control Interface**: Access `http://localhost:5000` in your browser.
+    * Enter the target coordinates.
+    * Click **EXECUTE HIJACK**.
+    * Use **UNDO GLITCH** to release the drone, return to `GUIDED` mode, and view the final precision report.
 
 ---
 
-## 📊 Validación de Resultados
+## 📊 Result Validation
 
-Al finalizar el ataque, el sistema utiliza la **fórmula de Haversine** para calcular la distancia entre la posición real del dron y el objetivo solicitado. 
-* El ataque se marca como **LOGRADO** si la distancia final es menor a 15 metros, cumpliendo con los estándares de precisión reportados en el estudio (error angular promedio de $5.13^{\circ}$).
-
----
-
-## ⚠️ Descargo de Responsabilidad
-Este proyecto tiene fines estrictamente educativos y de investigación en ciberseguridad. El uso de técnicas de GPS Spoofing en entornos reales puede ser ilegal y peligroso.
+Upon ending the attack, the system uses the **Haversine formula** to calculate the distance between the drone's real position and the requested target. 
+* The attack is marked as **SUCCESSFUL** if the final distance is within 15 meters, meeting the precision standards reported in the study (average angular error of $5.13^{\circ}$).
 
 ---
 
-## ⚖️ Licencia, Privacidad y Uso Ético
+## ⚖️ License, Privacy, and Ethical Use
 
-### Licencia
-Este proyecto está bajo la Licencia **MIT**. Esto significa que puedes usar, copiar y modificar el software libremente, siempre que se mantenga el aviso de copyright y la renuncia de responsabilidad. Para más detalles, consulta el archivo `LICENSE` en este repositorio.
+### License
+This project is licensed under the **MIT License**. You are free to use, copy, and modify the software as long as the copyright notice and disclaimer are retained.
 
-### Uso Ético y Responsabilidad
-Este software ha sido desarrollado con fines exclusivamente **académicos y de investigación**. El objetivo es ayudar a la comunidad de ciberseguridad a entender las vulnerabilidades de los drones comerciales y desarrollar mejores sistemas de defensa (como detección de spoofing y navegación inercial robusta).
+### Ethical Use and Responsibility
+This software was developed strictly for **academic and research purposes**. The goal is to help the cybersecurity community understand commercial drone vulnerabilities and develop better defense systems (such as spoofing detection).
 
-* **Prohibición de Uso Malicioso:** El autor no se hace responsable del mal uso de este código en entornos reales.
-* **Legalidad:** El GPS Spoofing y la interferencia de señales son actividades reguladas y, en muchos casos, ilegales. Este código debe ejecutarse **únicamente en entornos de simulación (SITL)**.
+* **Malicious Use Prohibited**: The author is not responsible for any misuse of this code in real-world environments.
+* **Legality**: GPS spoofing and signal interference are heavily regulated and often illegal. This code should be executed **only in simulation environments (SITL)**.
 
-### Privacidad y Seguridad
-Este proyecto no recopila datos personales. Sin embargo, al trabajar con sistemas de telemetría y drones:
-1.  **Seguridad de Red:** Se recomienda ejecutar el servidor Flask en una red local segura o aislada.
-2.  **Logs de Vuelo:** Asegúrate de no subir archivos de telemetría (`.tlog` o `.bin`) que puedan contener coordenadas reales de tu ubicación física si realizas pruebas fuera de la simulación.
+### Privacy
+This project does not collect personal data. However, when working with telemetry:
+1.  **Network Security**: Run the Flask server on a secure or isolated local network.
+2.  **Flight Logs**: Ensure you do not upload telemetry files (`.tlog` or `.bin`) that might contain real coordinates of your physical location if testing outside of simulation.
