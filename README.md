@@ -25,7 +25,6 @@ Designed for drones executing autonomous missions following waypoints (e.g., Par
 * **Hijacking Formula**: The script calculates a fake position ($a$) using the paper's vector equation:
   $$a = p_{waypoint} + k \cdot (p_{target} - p_{init})$$
   where $k$ is a negative parameter that projects the GPS lie to the opposite side of the real target.
-* **Dynamic Update**: The backend uses a threading loop to recalculate the glitch in real-time, correcting drift and improving hijacking precision.
 
 
 
