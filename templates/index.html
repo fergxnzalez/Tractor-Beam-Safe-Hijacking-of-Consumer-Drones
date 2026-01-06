@@ -1,129 +1,204 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Safe-Hijacking Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tractor Beam C2 - Pro</title>
     <style>
-        :root {
-            --bg: #1a1a2e;
-            --card: #16213e;
-            --text: #e94560;
-            --input-bg: #0f3460;
-            --accent: #00d2ff;
-        }
-        body {
-            background-color: var(--bg);
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background-color: var(--card);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 400px;
-            text-align: center;
-        }
-        h2 { color: var(--accent); margin-bottom: 1.5rem; }
-        .input-group { margin-bottom: 1rem; text-align: left; }
-        label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #bbb; }
-        input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 5px;
-            border: none;
-            background: var(--input-bg);
-            color: white;
-            box-sizing: border-box;
-        }
-        .btn {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .btn-execute { background-color: var(--text); color: white; }
-        .btn-execute:hover { background-color: #ff4d6d; transform: scale(1.02); }
-        .btn-undo { background-color: #4ecca3; color: #1a1a2e; display: none; }
-        .btn-undo:hover { background-color: #45b08c; }
+        body { background-color: #1a1a1a; color: #0f0; font-family: 'Consolas', monospace; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: span 2; }
         
-        /* Estilos para el contenedor de estado */
-        #statusContainer { 
-            margin-top: 1.5rem; 
-            padding: 10px; 
-            border-radius: 5px; 
-            background: rgba(0, 210, 255, 0.1);
-            display: none; 
-        }
-        #statusText { font-size: 0.9rem; color: var(--accent); }
+        .panel { border: 1px solid #444; padding: 15px; background: #222; margin-bottom:10px; }
+        h3 { margin-top: 0; color: #fff; border-bottom: 1px solid #004400; padding-bottom: 5px;}
+        
+        input, select, button { width: 100%; padding: 10px; margin-top: 5px; background: #333; color: #fff; border: 1px solid #555; }
+        
+        /* Special Buttons */
+        .btn-connect { background: #004488; }
+        .btn-takeoff { background: #aa8800; color: #fff; font-weight: bold; border-color: #ccaa00; }
+        .btn-start { background: #006600; font-weight: bold; margin-top: 15px;}
+        .btn-stop { background: #880000; font-weight: bold; }
+        button:hover { filter: brightness(1.2); cursor: pointer; }
+
+        /* Telemetry and Status */
+        .metric-box { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding: 5px 0; }
+        .val { font-weight: bold; color: #fff; }
+        .good { color: #0f0; } .bad { color: #f00; } .warn { color: #ff0; }
+
+        /* Live Attack Panel */
+        #attack-panel { border: 1px solid #f00; background: #2a0000; display: none; }
+        .phase-text { font-size: 1.2em; text-align: center; padding: 10px; font-weight: bold; }
+        .success-metric { font-size: 2em; text-align: center; color: #fff; margin: 10px 0; }
+        .label-metric { text-align: center; color: #aaa; font-size: 0.8em; }
+
+        #console { height: 120px; overflow-y: auto; background: #000; border: 1px solid #555; padding: 5px; font-size: 0.8em; color: #ccc; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Safe-Hijacking: Estrategia B</h2>
-        
-        <div class="input-group">
-            <label>Latitud del Objetivo (p_target)</label>
-            <input type="number" id="lat" step="any" value="-35.3630000">
+
+    <h1 style="text-align:center; border-bottom:2px solid #0f0;">TRACTOR BEAM <span style="color:#fff">C2</span></h1>
+
+<div class="container">
+
+    <div>
+        <div class="panel">
+            <h3>1. System and Flight</h3>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="connString" value="127.0.0.1:14550">
+                <button class="btn-connect" onclick="connectDrone()">LINK</button>
+            </div>
+            
+            <button class="btn-takeoff" onclick="takeoff()" style="margin-top:15px;">
+                🚀 AUTO TAKEOFF & PREP (15m)
+            </button>
+
+            <div style="margin-top: 20px;">
+                <div class="metric-box"><span>Status:</span> <span id="t-conn" class="bad">OFFLINE</span></div>
+                <div class="metric-box"><span>Mode:</span> <span id="t-mode" class="val">---</span></div>
+                <div class="metric-box"><span>Altitude:</span> <span id="t-alt" class="val">0m</span></div>
+                <div class="metric-box"><span>GPS:</span> <span id="t-gps" class="val">---</span></div>
+            </div>
         </div>
-        <div class="input-group">
-            <label>Longitud del Objetivo (p_target)</label>
-            <input type="number" id="lon" step="any" value="149.1650000">
-        </div>
-        
-        <button class="btn btn-execute" onclick="enviarAccion('/execute')">execute SECUESTRO</button>
-        <button class="btn btn-undo" id="undoBtn" onclick="enviarAccion('/undo')">undo GLITCH</button>
-        
-        <div id="statusContainer">
-            <div id="statusText">Esperando comandos...</div>
+
+        <div class="panel" id="attack-panel">
+            <div style="text-align:center; background:#f00; color:#fff; font-weight:bold;">ATTACK IN PROGRESS</div>
+            <div class="phase-text" id="att-phase">INIT</div>
+            
+            <div class="label-metric">DISTANCE TRAVELED (SUCCESS)</div>
+            <div class="success-metric" id="att-dist">0.0 m</div>
         </div>
     </div>
 
-    <script>
-        async function enviarAccion(ruta) {
-            const statusText = document.getElementById('statusText');
-            const statusContainer = document.getElementById('statusContainer');
-            const undoBtn = document.getElementById('undoBtn');
-            
-            const data = {
-                lat: document.getElementById('lat').value,
-                lon: document.getElementById('lon').value
-            };
+    <div class="panel">
+        <h3>2. Payload Configuration</h3>
+        
+        <label>Strategy</label>
+        <select id="strategy" onchange="toggleParams()">
+            <option value="A">Strategy A (Station Keeping)</option>
+            <option value="B">Strategy B (Path Following)</option>
+        </select>
 
-            statusContainer.style.display = 'block';
-            statusText.innerText = "Comunicando con ArduPilot...";
-            
-            try {
-                const response = await fetch(ruta, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                const res = await response.json();
-                
-                statusText.innerText = res.message;
+        <label>Target Displacement (North / East)</label>
+        <div style="display:flex; gap:5px;">
+            <input type="number" id="n_offset" placeholder="North (m)" value="50">
+            <input type="number" id="e_offset" placeholder="East (m)" value="0">
+        </div>
 
-                if(ruta === '/execute' && res.status === 'success') {
-                    undoBtn.style.display = 'block';
-                    statusText.style.color = '#00d2ff';
-                } else if (ruta === '/undo') {
-                    undoBtn.style.display = 'none';
-                    statusText.style.color = res.exito ? '#4ecca3' : '#e94560';
-                }
-            } catch (err) {
-                statusText.innerText = "Error: El servidor Python no responde.";
-                statusText.style.color = '#e94560';
+        <div id="paramA">
+            <label>Iterations</label>
+            <input type="number" id="iterations" value="300">
+        </div>
+        <div id="paramB" style="display:none;">
+            <label>K Factor</label>
+            <input type="number" id="k_factor" value="-1.0">
+        </div>
+
+        <button onclick="startAttack()" class="btn-start">START HIJACKING</button>
+        <button onclick="stopAttack()" class="btn-stop">STOP</button>
+    </div>
+
+    <div class="panel full-width">
+        <h3>Event Log</h3>
+        <div id="console"></div>
+    </div>
+</div>
+
+<script>
+    let telInterval = null;
+
+    function log(msg) {
+        const c = document.getElementById('console');
+        const t = new Date().toLocaleTimeString();
+        c.innerHTML += `<div>[${t}] ${msg}</div>`;
+        c.scrollTop = c.scrollHeight;
+    }
+
+    function toggleParams() {
+        const s = document.getElementById('strategy').value;
+        document.getElementById('paramA').style.display = (s === 'A') ? 'block' : 'none';
+        document.getElementById('paramB').style.display = (s === 'B') ? 'block' : 'none';
+    }
+
+    async function req(ep, data) {
+        const r = await fetch(ep, {
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        return await r.json();
+    }
+
+    async function connectDrone() {
+        const ip = document.getElementById('connString').value;
+        log("Connecting...");
+        const res = await req('/connect', {ip: ip});
+        if(res.status === 'success') { 
+            log("Connected."); startTel(); 
+        } else { log("Error: " + res.message); }
+    }
+
+    async function takeoff() {
+        log("Starting takeoff sequence...");
+        const res = await req('/takeoff', {});
+        if(res.status === 'success') log(res.message);
+        else log("Takeoff Error: " + res.message);
+    }
+
+    async function startAttack() {
+        const s = document.getElementById('strategy').value;
+        const n = document.getElementById('n_offset').value;
+        const e = document.getElementById('e_offset').value;
+        const p = (s==='A') ? document.getElementById('iterations').value : document.getElementById('k_factor').value;
+        
+        const res = await req('/start', {strategy: s, n_offset: n, e_offset: e, param: p});
+        if(res.status === 'success') log("Attack STARTED."); 
+        else alert(res.message);
+    }
+
+    async function stopAttack() {
+        await req('/stop', {});
+        log("Attack stopped.");
+    }
+
+    function startTel() {
+        if(telInterval) clearInterval(telInterval);
+        telInterval = setInterval(async () => {
+            const res = await fetch('/status');
+            const d = await res.json();
+            
+            if(!d.connected) {
+                document.getElementById('t-conn').innerText = "OFFLINE";
+                document.getElementById('t-conn').className = "bad";
+                return;
             }
-        }
-    </script>
+
+            // Update Basic Telemetry
+            document.getElementById('t-conn').innerText = "ONLINE";
+            document.getElementById('t-conn').className = "good";
+            document.getElementById('t-mode').innerText = d.mode;
+            document.getElementById('t-alt').innerText = d.alt.toFixed(1) + " m";
+            document.getElementById('t-gps').innerText = d.gps_fix >= 3 ? "3D FIX (" + d.satellites + ")" : "NO FIX";
+            document.getElementById('t-gps').className = d.gps_fix >= 3 ? "good" : "bad";
+
+            // Update Attack Panel
+            const att = d.attack_data;
+            const attPanel = document.getElementById('attack-panel');
+            
+            if(att && att.active) {
+                attPanel.style.display = 'block';
+                document.getElementById('att-phase').innerText = att.phase;
+                // If in Hard Spoofing (Jamming), blink/change color
+                document.getElementById('att-phase').style.color = (att.phase.includes("JAMMING")) ? "#ff0" : "#fff";
+                
+                document.getElementById('att-dist').innerText = att.distance_moved.toFixed(1) + " m";
+            } else {
+                attPanel.style.display = 'none';
+            }
+
+        }, 1000);
+    }
+</script>
+
 </body>
 </html>
