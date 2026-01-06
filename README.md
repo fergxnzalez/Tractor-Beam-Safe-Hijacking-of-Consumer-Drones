@@ -13,8 +13,9 @@ The project uses the **ArduPilot (SITL)** simulator and the **DroneKit** library
 
 ## 🚀 Implemented Hijacking Strategies
 
-### Strategy A: Against Type I Drones (Static)
-Targeted at drones that use GPS to maintain a fixed position (e.g., DJI Phantom in Loiter or PosHold mode).
+### Strategy A: Against Type I Drones (Static NOT IMPLEMENTED)
+This strategy was not implemented due to the fact that is very simple, the mechanism to perform this strategy is changing the parameter `SIM_GPS1_GLTCH_X/Y` when the drone is in POSHOLD or LOITER mode to change it position. Then to see the result we must change that parameter to the value `0`.
+Targeted at drones that use GPS to maintain a fixed position (e.g., DJI Phantom in LOITER or POSHOLD mode).
 * **Mechanism**: A gradual displacement is injected into the GPS error parameters (`SIM_GPS1_GLTCH_X/Y`).
 * **Effect**: The drone attempts to compensate for the perceived error by physically flying in the opposite direction of the glitch, allowing it to be "dragged" to a desired location.
 
