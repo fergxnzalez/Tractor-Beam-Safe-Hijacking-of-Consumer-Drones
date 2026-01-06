@@ -6,16 +6,16 @@ The project uses the **ArduPilot (SITL)** simulator and the **DroneKit** library
 
 ## 📋 Repository Content
 
-* `web_hijack.py`: Flask-based backend server managing drone connection, vector calculations, and simulation parameter injection.
+* `app.py`: Flask-based backend server managing drone connection.
+* `spoofer.py`: Spoofer class where drone is controlled from.
 * `templates/index.html`: Interactive web interface designed with modern CSS to input target coordinates ($p_{target}$) and monitor the attack status.
 
 ---
 
 ## 🚀 Implemented Hijacking Strategies
 
-### Strategy A: Against Type I Drones (Static NOT IMPLEMENTED)
-This strategy was not implemented due to the fact that is very simple, the mechanism to perform this strategy is changing the parameter `SIM_GPS1_GLTCH_X/Y` when the drone is in POSHOLD or LOITER mode to change it position. Then to see the result we must change that parameter to the value `0`.
-Targeted at drones that use GPS to maintain a fixed position (e.g., DJI Phantom in LOITER or POSHOLD mode).
+### Strategy A: Against Type I Drones (Static)
+Targeted at drones that use GPS to maintain a fixed position (e.g., DJI Phantom in Loiter or PosHold mode).
 * **Mechanism**: A gradual displacement is injected into the GPS error parameters (`SIM_GPS1_GLTCH_X/Y`).
 * **Effect**: The drone attempts to compensate for the perceived error by physically flying in the opposite direction of the glitch, allowing it to be "dragged" to a desired location.
 
@@ -25,6 +25,7 @@ Designed for drones executing autonomous missions following waypoints (e.g., Par
 * **Hijacking Formula**: The script calculates a fake position ($a$) using the paper's vector equation:
   $$a = p_{waypoint} + k \cdot (p_{target} - p_{init})$$
   where $k$ is a negative parameter that projects the GPS lie to the opposite side of the real target.
+* **Dynamic Update**: The backend uses a threading loop to recalculate the glitch in real-time, correcting drift and improving hijacking precision.
 
 
 
@@ -52,20 +53,21 @@ Designed for drones executing autonomous missions following waypoints (e.g., Par
     * Take off and switch the drone to `AUTO` mode so it begins the mission.
 3.  **Launch the Server**:
     ```bash
-    python3 web_hijack.py
+    python3 app.py
     ```
 4.  **Control Interface**: Access `http://localhost:5000` in your browser.
+    * Link Drone
+    * Click **AUTO TAKEOFF**.
+    * Choose your strategy.
     * Enter the target coordinates.
-    * Click **EXECUTE HIJACK**.
-    * Use **UNDO GLITCH** to release the drone, return to `GUIDED` mode, and view the final precision report.
+    * Click **START HIJACK**.
+    * Use **STOP** to release the drone, return to `GUIDED` mode, and view the final precision report.
 
 ---
 
 ## 📊 Result Validation
 
 Upon ending the attack, the system uses the **Haversine formula** to calculate the distance between the drone's real position and the requested target. 
-* The attack is marked as **SUCCESSFUL** if the final distance is within 15 meters, meeting the precision standards reported in the study (average angular error of $5.13^{\circ}$).
-
 ---
 
 ## ⚖️ License, Privacy, and Ethical Use
